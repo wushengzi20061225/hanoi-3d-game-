@@ -1,0 +1,241 @@
+// script.js
+document.addEventListener('DOMContentLoaded', () => {
+    // --- DOM Elements ---
+    const pegs = document.querySelectorAll('.peg');
+    const diskCountInput = document.getElementById('diskCount');
+    const countDisplay = document.getElementById('countDisplay');
+    const resetBtn = document.getElementById('resetBtn');
+    const autoSolveBtn = document.getElementById('autoSolveBtn');
+    const moveCounterEl = document.getElementById('moveCounter');
+    const messageBox = document.getElementById('messageBox');
+
+    // --- Game State ---
+    let state = { A: [], B: [], C: [] };
+    let selectedDisk = null;
+    let moveCount = 0;
+    let isAutoSolving = false;
+
+    // --- Utility Functions ---
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function showMessage(text, type = 'success') {
+        messageBox.textContent = text;
+        messageBox.className = `message-box ${type}`;
+        messageBox.classList.remove('hidden');
+        setTimeout(() => messageBox.classList.add('hidden'), 3000);
+    }
+
+    // Initialize game
+    function initGame(numDisks) {
+        state = { A: [], B: [], C: [] };
+        selectedDisk = null;
+        moveCount = 0;
+        moveCounterEl.textContent = moveCount;
+        isAutoSolving = false;
+        
+        // Clear existing disks from DOM
+        document.querySelectorAll('.disk').forEach(d => d.remove());
+        
+        const pegA = document.getElementById('pegA');
+        const colors = ['#FF4136', '#FF851B', '#FFDC00', '#2ECC40', '#0074D9', '#B10DC9', '#AAAAAA', '#FF69B4'];
+        
+        // Create disks and push to state.A
+        for (let i = numDisks; i >= 1; i--) {
+            const disk = document.createElement('div');
+            disk.classList.add('disk');
+            disk.dataset.size = i;
+            // Size logic: smallest i=1 is 40px, largest i=8 is 280px (step of 30px approx)
+            const width = 40 + (numDisks - i) * 30; 
+            disk.style.width = `${width}px`;
+            disk.style.background = colors[i-1 % colors.length];
+            disk.textContent = i;
+            
+            pegA.appendChild(disk);
+            state.A.push(i);
+        }
+        updateUI();
+    }
+
+    // Update UI based on state array
+    function updateUI() {
+        // Re-render disks based on state arrays
+        // This is a simple way: clear and re-add. For better performance, you'd move elements.
+        Object.keys(state).forEach(pegId => {
+            const peg = document.getElementById(pegId);
+            // Move existing disks in DOM to correct peg based on state
+            state[pegId].forEach(size => {
+                const disk = document.querySelector(`.disk[data-size="${size}"]`);
+                if (disk && disk.parentElement !== peg) {
+                    peg.appendChild(disk);
+                }
+            });
+        });
+    }
+
+    // --- Event Handling ---
+    // Click to select/move
+    pegs.forEach(peg => {
+        peg.addEventListener('click', (e) => {
+            if (isAutoSolving) return; // Block clicks during auto-solve
+            
+            const targetPeg = e.currentTarget;
+            const pegId = targetPeg.id;
+            const clickedDisk = e.target.closest('.disk');
+
+            if (clickedDisk) {
+                // User clicked on a disk
+                handleDiskClick(clickedDisk, pegId);
+            } else {
+                // User clicked on peg empty space
+                handlePegClick(pegId);
+            }
+        });
+    });
+
+    function handleDiskClick(disk, pegId) {
+        const size = parseInt(disk.dataset.size);
+        
+        if (selectedDisk === null) {
+            // Select disk
+            // Rule: Can only select the top disk (last element in array)
+            const topDiskOnPeg = state[pegId][state[pegId].length - 1];
+            if (size === topDiskOnPeg) {
+                selectedDisk = disk;
+                disk.style.transform = 'translateY(-10px)'; // Lift effect
+            } else {
+                showMessage("Invalid Move: You must pick the top disk!", "error");
+                document.body.classList.add('animate-shake');
+                setTimeout(() => document.body.classList.remove('animate-shake'), 500);
+            }
+        } else {
+            // Try to move selected disk here
+            handlePegClick(pegId);
+        }
+    }
+
+    function handlePegClick(pegId) {
+        if (!selectedDisk) return;
+
+        const size = parseInt(selectedDisk.dataset.size);
+        const sourcePegId = selectedDisk.parentElement.id;
+        
+        // Check validity
+        if (sourcePegId === pegId) {
+            // Deselect if same peg
+            deselectDisk();
+            return;
+        }
+        if (state[pegId].length > 0 && state[pegId][state[pegId].length - 1] < size) {
+            // Trying to put on smaller disk
+            showMessage("Invalid Move: Cannot place larger disk on smaller one!", "error");
+            document.body.classList.add('animate-shake');
+            setTimeout(() => document.body.classList.remove('animate-shake'), 500);
+            deselectDisk();
+            return;
+        }
+
+        // Valid Move
+        moveDisk(sourcePegId, pegId, size);
+        deselectDisk();
+    }
+
+    function moveDisk(from, to, size) {
+        // Update state array
+        const index = state[from].indexOf(size);
+        if (index > -1) {
+            state[from].splice(index, 1);
+            state[to].push(size);
+            moveCount++;
+            moveCounterEl.textContent = moveCount;
+            
+            // Add animation class
+            const diskElement = document.querySelector(`.disk[data-size="${size}"]`);
+            diskElement.classList.add('animate-move');
+            setTimeout(() => diskElement.classList.remove('animate-move'), 500);
+
+            updateUI();
+            checkWin();
+        }
+    }
+
+    function deselectDisk() {
+        if (selectedDisk) {
+            selectedDisk.style.transform = 'translateY(0)';
+            selectedDisk = null;
+        }
+    }
+
+    // --- Game Logic ---
+    function checkWin() {
+        if (state.C.length === parseInt(diskCountInput.value)) {
+            showMessage(`🎉 Victory! You solved it in ${moveCount} moves!`, "success");
+            // Simple win animation
+            document.querySelectorAll('.peg')[2].classList.add('win-animation');
+        }
+    }
+
+    // --- Auto Solver (Recursive Algorithm) ---
+    async function autoSolve() {
+        if (isAutoSolving) return;
+        isAutoSolving = true;
+        autoSolveBtn.disabled = true;
+        resetBtn.disabled = true;
+        diskCountInput.disabled = true;
+        
+        // Clear current state but keep disk count
+        const numDisks = parseInt(diskCountInput.value);
+        initGame(numDisks); // Reset first
+        await sleep(500);
+
+        // Recursive Hanoi algorithm
+        // Moves n disks from source to destination using auxiliary peg
+        async function hanoi(n, source, dest, aux) {
+            if (n === 1) {
+                await moveOne(source, dest);
+            } else {
+                await hanoi(n - 1, source, aux, dest);
+                await moveOne(source, dest);
+                await hanoi(n - 1, aux, dest, source);
+            }
+        }
+
+        async function moveOne(from, to) {
+            if (isAutoSolving === false) return; // Safety break
+            const size = state[from][state[from].length - 1];
+            
+            // Visual feedback
+            const diskElement = document.querySelector(`.disk[data-size="${size}"]`);
+            diskElement.style.boxShadow = "0 0 15px 5px yellow";
+            
+            await sleep(200); // Pause for visual effect
+            
+            moveDisk(from, to, size);
+            await sleep(500); // Delay between moves (adjust as needed)
+        }
+
+        await hanoi(numDisks, 'A', 'C', 'B');
+
+        // Cleanup
+        isAutoSolving = false;
+        autoSolveBtn.disabled = false;
+        resetBtn.disabled = false;
+        diskCountInput.disabled = false;
+    }
+
+    // --- Event Listeners ---
+    diskCountInput.addEventListener('input', (e) => {
+        countDisplay.textContent = e.target.value;
+        initGame(parseInt(e.target.value));
+    });
+
+    resetBtn.addEventListener('click', () => {
+        initGame(parseInt(diskCountInput.value));
+    });
+
+    autoSolveBtn.addEventListener('click', autoSolve);
+
+    // Initial Setup
+    initGame(3);
+});
