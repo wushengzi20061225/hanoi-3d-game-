@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tower of Hanoi - 3D Learning Game</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-chess-rook"></i> Tower of Hanoi 3D</h1>
+            <p class="subtitle">A puzzle game for learning programming concepts!</p >
+        </header>
+
+        <main>
+            <div class="game-controls">
+                <div class="control-group">
+                    <label for="disk-count">
+                        <i class="fas fa-layer-group"></i> Number of Disks:
+                    </label>
+                    <div class="slider-container">
+                        <input type="range" id="disk-count-slider" min="3" max="8" value="5" class="slider">
+                        <input type="number" id="disk-count" min="3" max="8" value="5" class="number-input">
+                    </div>
+                </div>
+
+                <div class="stats-display">
+                    <div class="stat">
+                        <i class="fas fa-footsteps"></i>
+                        <span>Moves: <span id="move-counter">0</span></span>
+                    </div>
+                    <div class="stat">
+                        <i class="fas fa-bolt"></i>
+                        <span>Minimum: <span id="min-moves">31</span></span>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="reset-btn" class="btn">
+                        <i class="fas fa-redo"></i> Reset Game
+                    </button>
+                    <button id="auto-solve-btn" class="btn btn-primary">
+                        <i class="fas fa-robot"></i> Auto Solve
+                    </button>
+                    <button id="undo-btn" class="btn">
+                        <i class="fas fa-undo"></i> Undo
+                    </button>
+                </div>
+            </div>
+
+            <div class="warning-message" id="warning-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="warning-text">Invalid move!</span>
+            </div>
+
+            <div class="game-board">
+                <!-- Pegs will be dynamically created by JavaScript -->
+                <div id="pegs-container" class="pegs-container"></div>
+                
+                <div class="pegs-labels">
+                    <div class="peg-label">Peg A</div>
+                    <div class="peg-label">Peg B</div>
+                    <div class="peg-label">Peg C</div>
+                </div>
+            </div>
+
+            <div class="game-info">
+                <div class="instructions">
+                    <h3><i class="fas fa-graduation-cap"></i> How to Play</h3>
+                    <ul>
+                        <li><strong>Goal:</strong> Move all disks from Peg A to Peg C</li>
+                        <li><strong>Rule:</strong> A larger disk cannot be placed on a smaller one</li>
+                        <li><strong>Click a disk</strong> to select it, then <strong>click a peg</strong> to move it</li>
+                        <li>Or <strong>drag and drop</strong> disks between pegs</li>
+                        <li>Try to solve with the <strong>fewest moves</strong> possible!</li>
+                    </ul>
+                </div>
+
+                <div class="hint">
+                    <h3><i class="fas fa-lightbulb"></i> Hint</h3>
+                    <p>The minimum number of moves for <span id="current-disks">5</span> disks is <span id="hint-min-moves">31</span>.</p >
+                    <p>Formula: 2<sup>n</sup> - 1 moves (where n = number of disks)</p >
+                </div>
+            </div>
+        </main>
+
+        <div class="victory-modal" id="victory-modal">
+            <div class="victory-content">
+                <div class="victory-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h2>Congratulations! You Solved It!</h2>
+                <p>You completed the Tower of Hanoi with <span id="final-moves">0</span> moves.</p >
+                <p>The optimal solution for <span id="final-disks">0</span> disks is <span id="optimal-moves">0</span> moves.</p >
+                <div class="victory-stars">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="victory-buttons">
+                    <button id="play-again-btn" class="btn btn-primary">
+                        <i class="fas fa-play-circle"></i> Play Again
+                    </button>
+                    <button id="close-victory-btn" class="btn">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Created for Web Design Course | Learning Arrays, Objects, Events & CSS Animations</p >
+            <p class="array-methods">
+                <strong>Array Methods Used:</strong> 
+                <span class="method">push()</span>
+                <span class="method">pop()</span>
+                <span class="method">slice()</span>
+                <span class="method">forEach()</span>
+                <span class="method">filter()</span>
+            </p >
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
